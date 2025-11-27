@@ -207,18 +207,39 @@ export class Renderer {
         const ctx = this.ctx;
         const worldPos = this.grid.toWorld(player.gridPos.x, player.gridPos.y);
 
-        // Inertia Line
+        // Inertia Line (Vector Arrow)
         const inertiaGridX = player.gridPos.x + player.velocity.x;
         const inertiaGridY = player.gridPos.y + player.velocity.y;
         const inertiaWorld = this.grid.toWorld(inertiaGridX, inertiaGridY);
 
-        ctx.beginPath();
-        ctx.moveTo(worldPos.x, worldPos.y);
-        ctx.lineTo(inertiaWorld.x, inertiaWorld.y);
-        ctx.strokeStyle = player.color;
-        ctx.setLineDash([4, 4]);
-        ctx.stroke();
-        ctx.setLineDash([]);
+        // Draw Arrow
+        const from = worldPos;
+        const to = inertiaWorld;
+        const headlen = 10;
+        const dx = to.x - from.x;
+        const dy = to.y - from.y;
+        const angle = Math.atan2(dy, dx);
+
+        // Only draw if there is movement
+        if (Math.hypot(dx, dy) > 1) {
+            ctx.beginPath();
+            ctx.moveTo(from.x, from.y);
+            ctx.lineTo(to.x, to.y);
+            ctx.lineTo(
+                to.x - headlen * Math.cos(angle - Math.PI / 6),
+                to.y - headlen * Math.sin(angle - Math.PI / 6)
+            );
+            ctx.moveTo(to.x, to.y);
+            ctx.lineTo(
+                to.x - headlen * Math.cos(angle + Math.PI / 6),
+                to.y - headlen * Math.sin(angle + Math.PI / 6)
+            );
+
+            ctx.strokeStyle = player.color;
+            ctx.lineWidth = 2;
+            ctx.setLineDash([]); // Solid line
+            ctx.stroke();
+        }
 
         // Draw Move Cells
         moves.forEach((move) => {

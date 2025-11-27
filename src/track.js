@@ -25,36 +25,36 @@ export class Track {
     }
 
     setStartLine(grid, startRaw, dir) {
-        this.startDir = dir;
+        // Snap direction to nearest cardinal
+        let snapDir = { x: 0, y: 0 };
+        if (Math.abs(dir.x) > Math.abs(dir.y)) {
+            snapDir.x = Math.sign(dir.x);
+        } else {
+            snapDir.y = Math.sign(dir.y);
+        }
+        this.startDir = snapDir;
 
-        // Move start point behind the line by one grid cell size to ensure it's behind
+        // Move start point AFTER the line (in direction of travel)
+        // This ensures the car starts the race having just crossed the start line
         const offsetDist = grid.size;
-        const behindX = startRaw.x - dir.x * offsetDist;
-        const behindY = startRaw.y - dir.y * offsetDist;
+        const startX = startRaw.x + snapDir.x * offsetDist;
+        const startY = startRaw.y + snapDir.y * offsetDist;
 
         // Snap start point to grid
-        const snapped = grid.toGrid(behindX, behindY);
+        const snapped = grid.toGrid(startX, startY);
         this.startPoint = snapped; // Store as grid coordinates
 
-        // For the visual line, we want it to be "in front" of the car.
-        // So we calculate the line position based on the original startRaw or slightly adjusted.
-        // Let's place the line exactly between the start cell and the next cell.
         // Center of start cell:
         const startCellCenter = grid.toWorld(snapped.x, snapped.y);
-        // Center of next cell (in direction of travel):
-        // We approximate direction to nearest cardinal/diagonal for grid logic?
-        // Or just use the vector.
 
-        // Let's just place the line at startRaw snapped to grid, but keep car behind.
-        // Actually, let's define the line based on the car position + half grid size in direction.
-
+        // Place the line BEHIND the car
         const lineCenter = {
-            x: startCellCenter.x + dir.x * grid.size,
-            y: startCellCenter.y + dir.y * grid.size,
+            x: startCellCenter.x - snapDir.x * grid.size,
+            y: startCellCenter.y - snapDir.y * grid.size,
         };
 
         // Perpendicular vector
-        const perp = { x: -dir.y, y: dir.x };
+        const perp = { x: -snapDir.y, y: snapDir.x };
         const halfWidth = (this.width + CONFIG.borderWidth * 2) / 2;
 
         this.startLine = {

@@ -42,4 +42,12 @@ Then player thomas is red but the name is highlighted in blue. Just highlight it
 
 # Query 10
 
-Make a slider for the grid size just like it is for the width slider
+Sorry, place the car in the first cell after the finish line so that the game isn't immediatly over after one move. Make a slider for the grid size just like it is for the width slider
+Add an icon for github linking to the upstream repo: https://github.com/thomascamminady/racetrack
+Undo the hamburger menu and just put those options in the same part where the other buttons are. Also draw the line that shows how the car moves as a vector, ie arrow
+
+# Query 11
+
+make the start line be horizontal
+or vertical, whatever works best but not slanted like it is right now. Instead of the print icon, just write print. i think the "refresh (circle thing)" button is redundant and does the same as the clear? Move the github and print , grid size ,line width, buttons to the very right of the window.
+Also below the buttons there is a little bit of white space that is not used, some pixel heigh and over the full width. I dont need that.

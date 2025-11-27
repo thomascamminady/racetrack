@@ -56,31 +56,14 @@ class Game {
         document.getElementById("start-race-btn").onclick = () =>
             this.startRace();
 
-        // Menu
-        const menuBtn = document.getElementById("menu-toggle-btn");
-        const menu = document.getElementById("main-menu");
-        menuBtn.onclick = (e) => {
-            e.stopPropagation();
-            menu.classList.toggle("hidden");
-        };
-        document.addEventListener("click", (e) => {
-            if (menu && !menu.contains(e.target) && e.target !== menuBtn) {
-                menu.classList.add("hidden");
-            }
-        });
-
-        document.getElementById("reset-game-btn").onclick = () => {
-            this.resetGame();
-            menu.classList.add("hidden");
-        };
+        // Common Controls
         document.getElementById("print-btn").onclick = () => {
             window.print();
-            menu.classList.add("hidden");
         };
 
         // Settings
         document.getElementById("show-grid-chk").onchange = () => this.draw();
-        document.getElementById("grid-size-select").onchange = (e) => {
+        document.getElementById("grid-size-slider").oninput = (e) => {
             CONFIG.gridSize = parseInt(e.target.value);
             this.grid.setSize(CONFIG.gridSize);
             this.draw();

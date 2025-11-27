@@ -19,19 +19,6 @@
                     <button id="clear-track-btn" class="btn secondary">
                         Clear
                     </button>
-                    <div class="divider"></div>
-                    <label class="toggle" title="Track Width">
-                        <span class="toggle-label">Width</span>
-                        <input
-                            type="range"
-                            id="track-width-slider"
-                            min="40"
-                            max="150"
-                            value="80"
-                            step="10"
-                            style="width: 80px"
-                        />
-                    </label>
                 </div>
 
                 <div id="controls-stage-2" class="controls-group hidden">
@@ -56,38 +43,56 @@
                     >
                 </div>
 
-                <div class="top-right-menu">
-                    <button id="menu-toggle-btn" class="btn icon-only">
-                        ☰
+                <div class="controls-group common-controls">
+                    <div class="divider"></div>
+                    <label class="toggle" title="Track Width">
+                        <span class="toggle-label">Width</span>
+                        <input
+                            type="range"
+                            id="track-width-slider"
+                            min="40"
+                            max="150"
+                            value="80"
+                            step="10"
+                            style="width: 80px"
+                        />
+                    </label>
+                    <label class="toggle" title="Show Grid">
+                        <input type="checkbox" id="show-grid-chk" checked />
+                        <span class="toggle-label">Grid</span>
+                    </label>
+                    <label class="toggle" title="Grid Size">
+                        <span class="toggle-label">Size</span>
+                        <input
+                            type="range"
+                            id="grid-size-slider"
+                            min="15"
+                            max="60"
+                            value="30"
+                            step="5"
+                            style="width: 60px"
+                        />
+                    </label>
+                    <button id="print-btn" class="btn text-btn" title="Print">
+                        Print
                     </button>
-                    <div id="main-menu" class="menu-dropdown hidden">
-                        <div class="menu-item">
-                            <label class="toggle">
-                                <input
-                                    type="checkbox"
-                                    id="show-grid-chk"
-                                    checked
-                                />
-                                <span class="toggle-label">Show Grid</span>
-                            </label>
-                        </div>
-                        <div class="menu-item">
-                            <label>Grid Size</label>
-                            <select id="grid-size-select" class="select-small">
-                                <option value="15">Small</option>
-                                <option value="25">Medium</option>
-                                <option value="30" selected>Large</option>
-                                <option value="40">Extra Large</option>
-                            </select>
-                        </div>
-                        <div class="menu-divider"></div>
-                        <button id="print-btn" class="btn text-btn">
-                            Print Track
-                        </button>
-                        <button id="reset-game-btn" class="btn text-btn danger">
-                            Reset Game
-                        </button>
-                    </div>
+                    <a
+                        href="https://github.com/thomascamminady/racetrack"
+                        target="_blank"
+                        class="github-link"
+                        title="View on GitHub"
+                    >
+                        <svg
+                            height="24"
+                            width="24"
+                            viewBox="0 0 16 16"
+                            fill="currentColor"
+                        >
+                            <path
+                                d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"
+                            ></path>
+                        </svg>
+                    </a>
                 </div>
             </header>
 

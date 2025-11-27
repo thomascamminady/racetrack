@@ -36,7 +36,7 @@ export class Renderer {
         this.ctx.restore();
     }
 
-    drawTrack(track) {
+    drawTrack(track, showStartLine = true) {
         if (!track.path2D) return;
 
         const ctx = this.ctx;
@@ -54,13 +54,25 @@ export class Renderer {
         ctx.stroke(track.path2D);
 
         // Start Line
-        if (track.startLine) {
-            ctx.beginPath();
-            ctx.moveTo(track.startLine.p1.x, track.startLine.p1.y);
-            ctx.lineTo(track.startLine.p2.x, track.startLine.p2.y);
-            ctx.strokeStyle = "#000";
-            ctx.lineWidth = 4;
-            ctx.stroke();
+        if (track.startLine && showStartLine) {
+            const p1 = track.startLine.p1;
+            const p2 = track.startLine.p2;
+            const dx = p2.x - p1.x;
+            const dy = p2.y - p1.y;
+            const len = Math.hypot(dx, dy);
+            const angle = Math.atan2(dy, dx);
+
+            ctx.save();
+            ctx.translate(p1.x, p1.y);
+            ctx.rotate(angle);
+
+            const width = 10; // Thickness of the finish line
+
+            // Solid Green Line
+            ctx.fillStyle = "#22c55e"; // Green
+            ctx.fillRect(0, -width / 2, len, width);
+
+            ctx.restore();
 
             // Arrow
             if (track.startDir) {
@@ -68,7 +80,6 @@ export class Renderer {
             }
         }
     }
-
     drawArrow(startLine, dir) {
         const ctx = this.ctx;
         const center = {
@@ -174,7 +185,18 @@ export class Renderer {
             }
             ctx.strokeStyle = player.color;
             ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]); // Dashed line
             ctx.stroke();
+            ctx.setLineDash([]); // Reset
+
+            // Draw vertices along the path
+            ctx.fillStyle = player.color;
+            for (const pos of player.history) {
+                const pt = this.grid.toWorld(pos.x, pos.y);
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
         }
 
         // Active Highlight

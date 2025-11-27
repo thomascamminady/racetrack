@@ -34,37 +34,55 @@ export class Track {
         }
         this.startDir = snapDir;
 
-        // Move start point AFTER the line (in direction of travel)
-        // This ensures the car starts the race having just crossed the start line
-        const offsetDist = grid.size;
-        const startX = startRaw.x + snapDir.x * offsetDist;
-        const startY = startRaw.y + snapDir.y * offsetDist;
+        // 1. Determine Start Line Center
+        // We want the start line to be centered on the track path (startRaw)
+        // but snapped to be perpendicular to travel.
+        // If travel is X, line is vertical. X is fixed, Y is centered on track.
+        // Actually, if we want it to be a "finish line", it should be at a specific point along the track.
+        // Let's use startRaw as the center of the line.
 
-        // Snap start point to grid
-        const snapped = grid.toGrid(startX, startY);
-        this.startPoint = snapped; // Store as grid coordinates
+        const lineCenter = { ...startRaw };
 
-        // Center of start cell:
-        const startCellCenter = grid.toWorld(snapped.x, snapped.y);
+        // 2. Determine Car Position
+        // The car must be on a grid center.
+        // It should be "behind" the line.
+        // We search for the nearest grid center that is behind the line.
 
-        // Place the line BEHIND the car
-        const lineCenter = {
-            x: startCellCenter.x - snapDir.x * grid.size,
-            y: startCellCenter.y - snapDir.y * grid.size,
+        // Candidate grid point near startRaw
+        const rawGrid = grid.toGrid(startRaw.x, startRaw.y);
+
+        // We check the cell at rawGrid, and maybe one step back?
+        // If startRaw is exactly at a grid center, and line is there, car should be one step back.
+        // If startRaw is between cells, maybe the car can be at the cell behind?
+
+        // Let's try: Car is at grid cell -1 step in direction from the line center?
+        // Or just find the nearest grid cell to (lineCenter - step).
+
+        const targetCarPosWorld = {
+            x: lineCenter.x - snapDir.x * grid.size,
+            y: lineCenter.y - snapDir.y * grid.size,
         };
 
-        // Perpendicular vector
+        const carGridPos = grid.toGrid(
+            targetCarPosWorld.x,
+            targetCarPosWorld.y
+        );
+        this.startPoint = carGridPos;
+
+        // 3. Define Start Line Geometry
+        // Make it wide enough to cover the track even if diagonal
+        // Width * 2 should be safe.
+        const lineWidth = (this.width + CONFIG.borderWidth * 2) * 2;
         const perp = { x: -snapDir.y, y: snapDir.x };
-        const halfWidth = (this.width + CONFIG.borderWidth * 2) / 2;
 
         this.startLine = {
             p1: {
-                x: lineCenter.x + perp.x * halfWidth,
-                y: lineCenter.y + perp.y * halfWidth,
+                x: lineCenter.x + (perp.x * lineWidth) / 2,
+                y: lineCenter.y + (perp.y * lineWidth) / 2,
             },
             p2: {
-                x: lineCenter.x - perp.x * halfWidth,
-                y: lineCenter.y - perp.y * halfWidth,
+                x: lineCenter.x - (perp.x * lineWidth) / 2,
+                y: lineCenter.y - (perp.y * lineWidth) / 2,
             },
         };
     }

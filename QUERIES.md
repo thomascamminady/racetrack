@@ -51,3 +51,35 @@ Undo the hamburger menu and just put those options in the same part where the ot
 make the start line be horizontal
 or vertical, whatever works best but not slanted like it is right now. Instead of the print icon, just write print. i think the "refresh (circle thing)" button is redundant and does the same as the clear? Move the github and print , grid size ,line width, buttons to the very right of the window.
 Also below the buttons there is a little bit of white space that is not used, some pixel heigh and over the full width. I dont need that.
+
+# Query 12
+
+The start finish line isn't perfectly aligned. also make it look more like a finish line. it should cross the full width of the track.Print should look like a proper button, like the others. and width and size and grid and print should move more to the right. See if you can simplify anything else.
+
+# Query 13
+
+wrong again, now after just one move i have cross the finish line but i havent completed the whole loop. add a check that at this does not happen. basically you should assure that the player has traversed the full course in a loop for him to win the game. it should not be able to cheat. Also the start finish line looks bad. make it simpler, cleaner. also all buttons as shown in the screenshot should be right aligned
+
+# Query 14
+
+Nice! Some small improvements. The width should be roughly everythign 1.5x of what it is now, ie the track width. Make the finish line just a single color like green. also can you make the lines of the trajectories be dashed or dotted or something so that the routes are visible even ifhtey overlap. still the github icon and buttons are not flushed to the right. also when the user resizes the grid that should reset the game and bring everyone back to the start.
+
+# Query 15
+
+Make the finish line more opaque. also remove the black outline of that finish line.just greenish. Also only add the start finish line once the race started. and actually, once the race started, width and size should be disabled. it should only be there in the creation period. also the centering should leave a little less padding. It should also show the number of turns for example "player 1: Turn 24"
+
+# Query 16
+
+Add just a little bit of text to the readme stating that you can create your own track, place the game racetrack, arbitrary players, or print everything,
+
+# Query 17
+
+this looks a bit redundant. Instead of writing ss turn in the top, just make the whole header in red and then blue and then red etc,
+
+# Query 18
+
+When showing the trace a player took, also draw not just the dashed line but a small circle in the corresponding color at every vertix of the path.
+
+# Query 19
+
+Those top buttons are still not all the way to the right (width grid size print github)

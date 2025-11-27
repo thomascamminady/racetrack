@@ -67,6 +67,9 @@ body {
     align-items: center;
     gap: 12px;
     margin-left: auto;
+    padding-right: 0;
+    flex: 0 0 auto;
+    /* Prevent growing, keep flush right */
 }
 
 .github-link {
@@ -358,4 +361,34 @@ canvas {
         box-shadow: none;
         border: 1px solid #000;
     }
+}
+
+/* Racing Mode Header Overrides */
+.top-bar.racing-mode {
+    color: white;
+    transition: background-color 0.3s ease;
+}
+
+.top-bar.racing-mode .logo {
+    color: white;
+}
+
+.top-bar.racing-mode .toggle,
+.top-bar.racing-mode .instruction,
+.top-bar.racing-mode .btn.icon,
+.top-bar.racing-mode .status-text {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.top-bar.racing-mode .btn.secondary {
+    color: white;
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.top-bar.racing-mode .btn.secondary:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.top-bar.racing-mode .divider {
+    background-color: rgba(255, 255, 255, 0.3);
 }

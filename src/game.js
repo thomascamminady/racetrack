@@ -66,6 +66,13 @@ class Game {
         document.getElementById("grid-size-slider").oninput = (e) => {
             CONFIG.gridSize = parseInt(e.target.value);
             this.grid.setSize(CONFIG.gridSize);
+            // Reset game if racing
+            if (
+                this.state.mode === STATE.RACING ||
+                this.state.mode === STATE.FINISHED
+            ) {
+                this.resetGame();
+            }
             this.draw();
         };
         document.getElementById("track-width-slider").oninput = (e) => {
@@ -285,6 +292,8 @@ class Game {
     startRace() {
         this.setMode(STATE.RACING);
         this.updatePlayerUI();
+        document.getElementById("grid-size-slider").disabled = true;
+        document.getElementById("track-width-slider").disabled = true;
     }
 
     handleRaceClick(worldPos) {
@@ -324,12 +333,19 @@ class Game {
             player.crash();
         } else {
             // Check Lap
-            if (this.track.checkLap(currentWorld, targetWorld)) {
+            // To prevent cheating (crossing finish line immediately backwards or without loop),
+            // we can check if the player has traveled a minimum distance or number of moves.
+            // A simple heuristic is checking if history length is sufficient.
+            // Or better: check if we are crossing the line in the correct direction AND
+            // we are not just at the start.
+
+            const minMoves = 10; // Arbitrary minimum moves to complete a lap
+            const hasMinMoves = player.history.length > minMoves;
+
+            if (hasMinMoves && this.track.checkLap(currentWorld, targetWorld)) {
                 this.setMode(STATE.FINISHED);
-                const indicator = document.getElementById("turn-indicator");
-                indicator.textContent = `🏆 ${player.name} WINS! 🏆`;
-                indicator.style.color = player.color;
                 player.move(targetGridPos); // Final move
+                this.updatePlayerUI();
                 this.draw();
                 return;
             }
@@ -379,22 +395,45 @@ class Game {
                 const activeStyle = isActive
                     ? `border-color: ${p.color}; background-color: ${p.color}20; color: ${p.color};`
                     : "";
+                const turn = p.history.length - 1;
                 return `
             <div class="player-chip ${
                 isActive ? "active" : ""
             }" style="${activeStyle}">
                 <div class="player-dot" style="background:${p.color}"></div>
-                ${p.name}
+                <div>
+                    <div>${p.name}</div>
+                    <div style="font-size: 0.8em; opacity: 0.8;">Turn ${turn}</div>
+                </div>
             </div>
             `;
             })
             .join("");
 
+        const topBar = document.querySelector(".top-bar");
+        const indicator = document.getElementById("turn-indicator");
+
         if (this.state.mode === STATE.RACING) {
             const p = this.state.players[this.state.currentPlayerIdx];
-            const indicator = document.getElementById("turn-indicator");
-            indicator.textContent = `${p.name}'s Turn`;
-            indicator.style.color = p.color;
+            topBar.classList.add("racing-mode");
+            topBar.style.backgroundColor = p.color;
+            if (indicator) indicator.style.display = "none";
+        } else if (this.state.mode === STATE.FINISHED) {
+            const p = this.state.players[this.state.currentPlayerIdx];
+            topBar.classList.add("racing-mode");
+            topBar.style.backgroundColor = p.color;
+            if (indicator) {
+                indicator.style.display = "block";
+                indicator.textContent = `🏆 ${p.name} WINS! 🏆`;
+            }
+        } else {
+            topBar.classList.remove("racing-mode");
+            topBar.style.backgroundColor = "";
+            if (indicator) {
+                indicator.style.display = "block";
+                indicator.textContent = "Race in progress";
+                indicator.style.color = "";
+            }
         }
     }
 
@@ -405,6 +444,9 @@ class Game {
         this.track = new Track();
         this.setMode(STATE.DRAWING);
         document.getElementById("start-race-btn").disabled = true;
+        document.getElementById("grid-size-slider").disabled = false;
+        document.getElementById("track-width-slider").disabled = false;
+        this.updatePlayerUI();
         this.centerView();
     }
 
@@ -427,7 +469,7 @@ class Game {
             maxY = Math.max(maxY, p.y);
         }
 
-        const padding = CONFIG.trackWidth + 100;
+        const padding = 50;
         const width = maxX - minX + padding * 2;
         const height = maxY - minY + padding * 2;
         const cx = (minX + maxX) / 2;
@@ -449,7 +491,10 @@ class Game {
     draw() {
         this.renderer.beginFrame();
 
-        this.renderer.drawTrack(this.track);
+        const showStartLine =
+            this.state.mode === STATE.RACING ||
+            this.state.mode === STATE.FINISHED;
+        this.renderer.drawTrack(this.track, showStartLine);
 
         if (this.state.mode === STATE.DRAWING) {
             this.renderer.drawPreviewPath(this.state.drawnPath);

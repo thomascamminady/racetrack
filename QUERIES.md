@@ -91,3 +91,7 @@ Embed the #racetrack.png file into the readme
 # Query 21
 
 Actually, when hitting a wall the first time, move the player back 1 square, then hitting the wall again, 2 squares, 3 squares so on. do not reset the turn counter, it should be punishemnet
+
+# Query 22
+
+When the top bar is red, the slider should not be this grayish, that doesn't look good. instead make the github logo white and just do something ncier for the slider width. also the grid check button should not be blue, that is already a color for the player

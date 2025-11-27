@@ -56,13 +56,7 @@ class Game {
         document.getElementById("start-race-btn").onclick = () =>
             this.startRace();
 
-        // Common Controls
-        document.getElementById("print-btn").onclick = () => {
-            window.print();
-        };
-
         // Settings
-        document.getElementById("show-grid-chk").onchange = () => this.draw();
         document.getElementById("grid-size-slider").oninput = (e) => {
             CONFIG.gridSize = parseInt(e.target.value);
             this.grid.setSize(CONFIG.gridSize);
@@ -506,9 +500,7 @@ class Game {
             this.renderer.drawPreviewPath(this.state.drawnPath);
         }
 
-        if (document.getElementById("show-grid-chk").checked) {
-            this.renderer.drawGridLines();
-        }
+        this.renderer.drawGridLines();
 
         this.state.players.forEach((p, idx) => {
             const isActive =

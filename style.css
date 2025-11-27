@@ -363,6 +363,13 @@ canvas {
     }
 }
 
+/* Global Input Styling */
+input[type="checkbox"],
+input[type="range"] {
+    accent-color: #475569;
+    cursor: pointer;
+}
+
 /* Racing Mode Header Overrides */
 .top-bar.racing-mode {
     color: white;
@@ -376,8 +383,18 @@ canvas {
 .top-bar.racing-mode .toggle,
 .top-bar.racing-mode .instruction,
 .top-bar.racing-mode .btn.icon,
-.top-bar.racing-mode .status-text {
+.top-bar.racing-mode .status-text,
+.top-bar.racing-mode .github-link {
     color: rgba(255, 255, 255, 0.9);
+}
+
+.top-bar.racing-mode .github-link:hover {
+    color: white;
+}
+
+.top-bar.racing-mode input[type="checkbox"],
+.top-bar.racing-mode input[type="range"] {
+    accent-color: white;
 }
 
 .top-bar.racing-mode .btn.secondary {

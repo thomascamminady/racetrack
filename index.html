@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Racetrack</title>
+        <link rel="stylesheet" href="style.css" />
+    </head>
+    <body>
+        <div class="app-container">
+            <header class="top-bar">
+                <div class="logo">Racetrack</div>
+
+                <div id="controls-stage-1" class="controls-group">
+                    <span class="instruction">Draw the track</span>
+                    <button id="finish-drawing-btn" class="btn primary">
+                        Finish Drawing
+                    </button>
+                    <button id="clear-track-btn" class="btn secondary">
+                        Clear
+                    </button>
+                </div>
+
+                <div id="controls-stage-2" class="controls-group hidden">
+                    <input
+                        type="text"
+                        id="player-name-input"
+                        placeholder="Player Name"
+                        maxlength="12"
+                    />
+                    <button id="add-player-btn" class="btn secondary">
+                        Add Player
+                    </button>
+                    <div class="divider"></div>
+                    <button id="start-race-btn" class="btn primary" disabled>
+                        Start Race
+                    </button>
+                </div>
+
+                <div id="controls-stage-3" class="controls-group hidden">
+                    <span id="turn-indicator" class="status-text"
+                        >Race in progress</span
+                    >
+                </div>
+
+                <div class="controls-right">
+                    <label class="toggle">
+                        <input type="checkbox" id="show-grid-chk" checked />
+                        <span class="toggle-label">Grid</span>
+                    </label>
+                    <button id="print-btn" class="btn icon" title="Print">
+                        🖨️
+                    </button>
+                    <button id="reset-game-btn" class="btn icon" title="Reset">
+                        🔄
+                    </button>
+                </div>
+            </header>
+
+            <div id="player-bar" class="player-bar hidden">
+                <!-- Player list will go here -->
+            </div>
+
+            <main class="canvas-container">
+                <canvas id="game-canvas"></canvas>
+            </main>
+        </div>
+        <script src="script.js"></script>
+    </body>
+</html>

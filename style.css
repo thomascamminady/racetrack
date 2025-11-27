@@ -53,10 +53,6 @@ body {
     color: var(--text);
     letter-spacing: -0.5px;
     margin-right: 20px;
-    background: linear-gradient(135deg, var(--primary), var(--primary-hover));
-    background-clip: text;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
 }
 
 .controls-group {

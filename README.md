@@ -28,3 +28,22 @@ The move logic is broken, i cant select a field to move to, i'm stuck. this work
 # Query 6
 
 The grid of cells you can select should overlap perfectly with the grid drawn in the background it should feel like you can click any of the cells so outline all nine of them
+
+# Query 7
+
+I think this is working for now. However, the 3x3 grid is still not aligning with the underlying grid. I want you to completely redo this. treat the underlying grid as a proper data structure grid and rewrite everything in a way where there is a grid/map object, a player/state object and a course objects a drawing engine and a game engine. Create separate files for all of these individually and place them in a src/ folder. It is really important that the notion is such that the player is always inside a square (x,y or i,j) and moves on that grid. then when clicking where to move, the undderlying grid should be highlighted. see what you can refactor to do things more intelligently
+
+# Query 8
+
+what about #file:script.js
+
+# Query 9
+
+Couple of things:
+
+Title should be grey or black or neutral
+Then player thomas is red but the name is highlighted in blue. Just highlight it in the matching color.Also as you can see the 3x3 grid still not aligned with the actual grid. Position a race car always in the center of a cell and make it such that everything is aligned. place the car initially behind the starting line in the nearest cell in the midle. it should all align
+
+# Query 10
+
+Make a slider for the grid size just like it is for the width slider

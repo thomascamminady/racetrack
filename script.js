@@ -6,21 +6,25 @@ const STATE = {
 };
 
 const CONFIG = {
-    gridSize: 20,
-    trackWidth: 80, // Width of the playable track
-    borderWidth: 4, // Width of the border edge
+    gridSize: 30, // Default, mutable
+    trackWidth: 80,
+    borderWidth: 4,
     colors: ["#ef4444", "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899"],
 };
 
 let gameState = {
     mode: STATE.DRAWING,
-    drawnPath: [], // Array of {x, y}
-    trackPath2D: null, // Path2D object for the track center line
+    drawnPath: [],
+    trackPath2D: null,
+    trackLength: 0,
     startPoint: null,
-    endPoint: null,
+    startAngle: 0,
     players: [],
     currentPlayerIdx: 0,
     isDrawing: false,
+    camera: { x: 0, y: 0, zoom: 1 },
+    isPanning: false,
+    lastPanPos: { x: 0, y: 0 },
 };
 
 const canvas = document.getElementById("game-canvas");
@@ -82,48 +86,223 @@ function setupEventListeners() {
     document.getElementById("clear-track-btn").onclick = resetTrack;
     document.getElementById("add-player-btn").onclick = addPlayer;
     document.getElementById("start-race-btn").onclick = startRace;
-    document.getElementById("reset-game-btn").onclick = resetGame;
-    document.getElementById("print-btn").onclick = () => window.print();
+
+    // Menu Controls
+    const menuBtn = document.getElementById("menu-toggle-btn");
+    const menu = document.getElementById("main-menu");
+
+    menuBtn.onclick = (e) => {
+        e.stopPropagation();
+        menu.classList.toggle("hidden");
+    };
+
+    document.addEventListener("click", (e) => {
+        if (menu && !menu.contains(e.target) && e.target !== menuBtn) {
+            menu.classList.add("hidden");
+        }
+    });
+
+    document.getElementById("reset-game-btn").onclick = () => {
+        resetGame();
+        menu.classList.add("hidden");
+    };
+    document.getElementById("print-btn").onclick = () => {
+        window.print();
+        menu.classList.add("hidden");
+    };
     document.getElementById("show-grid-chk").onchange = () => draw();
+    document.getElementById("grid-size-select").onchange = (e) => {
+        CONFIG.gridSize = parseInt(e.target.value);
+        draw();
+    };
+    document.getElementById("track-width-slider").oninput = (e) => {
+        CONFIG.trackWidth = parseInt(e.target.value);
+        if (gameState.drawnPath.length > 0) {
+            // Re-generate track path if we have a drawn path
+            gameState.trackPath2D = new Path2D();
+            gameState.trackPath2D.moveTo(
+                gameState.drawnPath[0].x,
+                gameState.drawnPath[0].y
+            );
+            for (let i = 1; i < gameState.drawnPath.length; i++) {
+                gameState.trackPath2D.lineTo(
+                    gameState.drawnPath[i].x,
+                    gameState.drawnPath[i].y
+                );
+            }
+        }
+        draw();
+    };
+
+    // Bottom Controls
+    document.getElementById("zoom-in-btn").onclick = () => zoom(1.2);
+    document.getElementById("zoom-out-btn").onclick = () => zoom(0.8);
+    document.getElementById("center-view-btn").onclick = centerView;
 }
 
-// --- Input Handling ---
+// --- Input Handling & Camera ---
 
 function getMousePos(evt) {
     const rect = canvas.getBoundingClientRect();
-    // Scale in case canvas is styled differently
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
     return {
-        x: (evt.clientX - rect.left) * scaleX,
-        y: (evt.clientY - rect.top) * scaleY,
+        x: evt.clientX - rect.left,
+        y: evt.clientY - rect.top,
     };
 }
 
+function toWorld(screenPos) {
+    return {
+        x: (screenPos.x - gameState.camera.x) / gameState.camera.zoom,
+        y: (screenPos.y - gameState.camera.y) / gameState.camera.zoom,
+    };
+}
+
+function handleWheel(e) {
+    e.preventDefault();
+    const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+    zoom(zoomFactor, getMousePos(e));
+}
+
+function zoom(factor, center) {
+    if (!center) {
+        const rect = canvas.getBoundingClientRect();
+        center = { x: rect.width / 2, y: rect.height / 2 };
+    }
+
+    const newZoom = Math.max(0.1, Math.min(5, gameState.camera.zoom * factor));
+
+    // Adjust offset to zoom towards center
+    gameState.camera.x =
+        center.x -
+        (center.x - gameState.camera.x) * (newZoom / gameState.camera.zoom);
+    gameState.camera.y =
+        center.y -
+        (center.y - gameState.camera.y) * (newZoom / gameState.camera.zoom);
+    gameState.camera.zoom = newZoom;
+
+    draw();
+}
+
+function centerView() {
+    if (!gameState.drawnPath || gameState.drawnPath.length === 0) {
+        gameState.camera = { x: 0, y: 0, zoom: 1 };
+        draw();
+        return;
+    }
+
+    // Calculate bounding box
+    let minX = Infinity,
+        minY = Infinity,
+        maxX = -Infinity,
+        maxY = -Infinity;
+    for (const p of gameState.drawnPath) {
+        if (p.x < minX) minX = p.x;
+        if (p.x > maxX) maxX = p.x;
+        if (p.y < minY) minY = p.y;
+        if (p.y > maxY) maxY = p.y;
+    }
+
+    // Add padding (track width + border + extra)
+    const padding = CONFIG.trackWidth + 100;
+    minX -= padding;
+    minY -= padding;
+    maxX += padding;
+    maxY += padding;
+
+    const contentWidth = maxX - minX;
+    const contentHeight = maxY - minY;
+    const contentCenterX = minX + contentWidth / 2;
+    const contentCenterY = minY + contentHeight / 2;
+
+    // Canvas dimensions
+    const canvasW = canvas.width;
+    const canvasH = canvas.height;
+
+    // Calculate zoom to fit
+    const zoomX = canvasW / contentWidth;
+    const zoomY = canvasH / contentHeight;
+    const newZoom = Math.min(zoomX, zoomY, 1.5); // Don't zoom in too much
+
+    // Center camera
+    // Camera transform: screen = (world * zoom) + cam
+    // cam = screen - (world * zoom)
+    // We want contentCenter to be at canvas center
+
+    gameState.camera.zoom = newZoom;
+    gameState.camera.x = canvasW / 2 - contentCenterX * newZoom;
+    gameState.camera.y = canvasH / 2 - contentCenterY * newZoom;
+
+    draw();
+}
+
 function handleInputStart(e) {
-    const pos = getMousePos(e);
+    const screenPos = getMousePos(e);
+    const worldPos = toWorld(screenPos);
+
+    gameState.inputStartPos = screenPos;
+    gameState.isPanning = false; // Reset, wait for move to confirm pan
+
     if (gameState.mode === STATE.DRAWING) {
         gameState.isDrawing = true;
-        gameState.drawnPath = [pos];
-    } else if (gameState.mode === STATE.RACING) {
-        handleRaceClick(pos);
+        gameState.drawnPath = [worldPos];
     }
 }
 
 function handleInputMove(e) {
-    const pos = getMousePos(e);
-    if (gameState.mode === STATE.DRAWING && gameState.isDrawing) {
-        // Add point if distance is sufficient (smoothing)
-        const lastPt = gameState.drawnPath[gameState.drawnPath.length - 1];
-        const dist = Math.hypot(pos.x - lastPt.x, pos.y - lastPt.y);
+    const screenPos = getMousePos(e);
+    const worldPos = toWorld(screenPos);
+
+    // Check for drag/pan threshold
+    if (
+        gameState.inputStartPos &&
+        !gameState.isPanning &&
+        gameState.mode !== STATE.DRAWING
+    ) {
+        const dist = Math.hypot(
+            screenPos.x - gameState.inputStartPos.x,
+            screenPos.y - gameState.inputStartPos.y
+        );
         if (dist > 5) {
-            gameState.drawnPath.push(pos);
+            gameState.isPanning = true;
+            gameState.lastPanPos = screenPos; // Start panning from here to avoid jump
+        }
+    }
+
+    if (gameState.isPanning) {
+        const dx = screenPos.x - gameState.lastPanPos.x;
+        const dy = screenPos.y - gameState.lastPanPos.y;
+        gameState.camera.x += dx;
+        gameState.camera.y += dy;
+        gameState.lastPanPos = screenPos;
+        draw();
+        return;
+    }
+
+    if (gameState.mode === STATE.DRAWING && gameState.isDrawing) {
+        const lastPt = gameState.drawnPath[gameState.drawnPath.length - 1];
+        const dist = Math.hypot(worldPos.x - lastPt.x, worldPos.y - lastPt.y);
+        if (dist > 5) {
+            gameState.drawnPath.push(worldPos);
             draw();
         }
     }
 }
 
-function handleInputEnd() {
+function handleInputEnd(e) {
+    gameState.inputStartPos = null;
+
+    if (gameState.isPanning) {
+        gameState.isPanning = false;
+        return; // It was a drag, not a click
+    }
+
+    if (gameState.mode === STATE.RACING && e) {
+        // Handle click for move
+        const screenPos = getMousePos(e);
+        const worldPos = toWorld(screenPos);
+        handleRaceClick(worldPos);
+    }
+
     gameState.isDrawing = false;
 }
 
@@ -159,14 +338,49 @@ function resetTrack() {
 }
 
 function placeStartEndPoints() {
-    // Place start near beginning, end near end
-    // Snap to grid
+    // Place start near beginning
     const path = gameState.drawnPath;
-    const startRaw = path[Math.floor(path.length * 0.05)];
-    const endRaw = path[Math.floor(path.length * 0.95)];
+    if (path.length < 10) return;
+
+    // Use index 5 or so to get a stable direction
+    const idx = Math.min(5, path.length - 1);
+    const startRaw = path[idx];
+
+    // Calculate direction
+    // Average vector of first few points
+    let dx = 0,
+        dy = 0;
+    const lookAhead = Math.min(20, path.length - 1);
+    for (let i = 0; i < lookAhead; i++) {
+        dx += path[i + 1].x - path[i].x;
+        dy += path[i + 1].y - path[i].y;
+    }
+    const len = Math.sqrt(dx * dx + dy * dy);
+    const dir = { x: dx / len, y: dy / len };
 
     gameState.startPoint = snapToGrid(startRaw);
-    gameState.endPoint = snapToGrid(endRaw);
+    gameState.startDir = dir;
+
+    // Define start line perpendicular to direction
+    // Width of track is CONFIG.trackWidth
+    // Line segment: center +/- perpendicular * width/2
+    const perp = { x: -dir.y, y: dir.x };
+    // Cover full visual width (track + borders)
+    const halfWidth = (CONFIG.trackWidth + CONFIG.borderWidth * 2) / 2;
+
+    // Use startRaw (point on path) for line center, not snapped startPoint
+    const lineCenter = startRaw;
+
+    gameState.startLine = {
+        p1: {
+            x: lineCenter.x + perp.x * halfWidth,
+            y: lineCenter.y + perp.y * halfWidth,
+        },
+        p2: {
+            x: lineCenter.x - perp.x * halfWidth,
+            y: lineCenter.y - perp.y * halfWidth,
+        },
+    };
 }
 
 // --- Stage 2: Setup ---
@@ -184,6 +398,8 @@ function addPlayer() {
         pos: { ...gameState.startPoint },
         vel: { x: 0, y: 0 },
         history: [{ ...gameState.startPoint }],
+        lap: 0,
+        progress: 0, // 0 to 1 along track
         crashed: false,
     });
 
@@ -237,9 +453,27 @@ function executeMove(player, targetPos) {
     // Check collision
     if (!isMoveValid(player.pos, targetPos)) {
         // Crash!
-        alert(`CRASH! ${player.name} went off track! Resetting velocity.`);
+        alert(`CRASH! ${player.name} went off track! Moving back 2 turns.`);
+
+        // Back 2 turns logic
+        // history has [start, m1, m2, ... current]
+        // We want to go back to m(current-2)
+
+        // If we have enough history
+        if (player.history.length > 2) {
+            player.history.pop(); // Remove current
+            player.history.pop(); // Remove previous
+            const newPos = player.history[player.history.length - 1];
+            player.pos = { ...newPos };
+        } else {
+            // Reset to start
+            const start = player.history[0];
+            player.history = [{ ...start }];
+            player.pos = { ...start };
+        }
+
         player.vel = { x: 0, y: 0 };
-        // Position stays same, turn ends.
+        // Turn ends
     } else {
         const newVel = {
             x: targetPos.x - player.pos.x,
@@ -249,7 +483,7 @@ function executeMove(player, targetPos) {
         player.vel = newVel;
         player.history.push({ ...targetPos });
 
-        if (checkWin(player.pos)) {
+        if (checkWin(player)) {
             setMode(STATE.FINISHED);
             document.getElementById(
                 "turn-indicator"
@@ -282,12 +516,40 @@ function isMoveValid(p1, p2) {
     return inside;
 }
 
-function checkWin(pos) {
-    const dist = Math.hypot(
-        pos.x - gameState.endPoint.x,
-        pos.y - gameState.endPoint.y
-    );
-    return dist < CONFIG.gridSize * 1.5;
+function checkWin(player) {
+    if (player.history.length < 5) return false; // Too early
+
+    const prev = player.history[player.history.length - 2];
+    const curr = player.pos;
+
+    // Check intersection with startLine
+    if (
+        gameState.startLine &&
+        segmentsIntersect(
+            prev,
+            curr,
+            gameState.startLine.p1,
+            gameState.startLine.p2
+        )
+    ) {
+        // Check direction
+        const moveDir = { x: curr.x - prev.x, y: curr.y - prev.y };
+        const dot =
+            moveDir.x * gameState.startDir.x + moveDir.y * gameState.startDir.y;
+        if (dot > 0) {
+            return true; // Lap complete!
+        }
+    }
+    return false;
+}
+
+function segmentsIntersect(a, b, c, d) {
+    const det = (b.x - a.x) * (d.y - c.y) - (d.x - c.x) * (b.y - a.y);
+    if (det === 0) return false;
+    const lambda =
+        ((d.y - c.y) * (d.x - a.x) + (c.x - d.x) * (d.y - a.y)) / det;
+    const gamma = ((a.y - b.y) * (d.x - a.x) + (b.x - a.x) * (d.y - a.y)) / det;
+    return 0 < lambda && lambda < 1 && 0 < gamma && gamma < 1;
 }
 
 // --- Helpers ---
@@ -364,14 +626,17 @@ function resetGame() {
 
 function draw() {
     // Clear
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
 
-    // Grid
-    if (document.getElementById("show-grid-chk").checked) {
-        drawGrid();
-    }
+    ctx.save();
+    // Apply Camera
+    ctx.translate(gameState.camera.x, gameState.camera.y);
+    ctx.scale(gameState.camera.zoom, gameState.camera.zoom);
 
-    // Track
+    // Track (Draw first so grid is on top)
     if (gameState.trackPath2D) {
         // Draw Border (Thick line)
         ctx.lineCap = "round";
@@ -385,6 +650,48 @@ function draw() {
         ctx.lineWidth = CONFIG.trackWidth;
         ctx.strokeStyle = "#ffffff"; // Track surface color
         ctx.stroke(gameState.trackPath2D);
+
+        // Start Line
+        if (gameState.startLine) {
+            // Draw Line
+            ctx.beginPath();
+            ctx.moveTo(gameState.startLine.p1.x, gameState.startLine.p1.y);
+            ctx.lineTo(gameState.startLine.p2.x, gameState.startLine.p2.y);
+            ctx.strokeStyle = "#000";
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            // Draw Direction Arrow
+            if (gameState.startDir) {
+                const center = gameState.startPoint;
+                const dir = gameState.startDir;
+                const arrowLen = 40;
+                const arrowEnd = {
+                    x: center.x + dir.x * arrowLen,
+                    y: center.y + dir.y * arrowLen,
+                };
+
+                ctx.beginPath();
+                ctx.moveTo(center.x, center.y);
+                ctx.lineTo(arrowEnd.x, arrowEnd.y);
+
+                // Arrowhead
+                const angle = Math.atan2(dir.y, dir.x);
+                ctx.lineTo(
+                    arrowEnd.x - 10 * Math.cos(angle - Math.PI / 6),
+                    arrowEnd.y - 10 * Math.sin(angle - Math.PI / 6)
+                );
+                ctx.moveTo(arrowEnd.x, arrowEnd.y);
+                ctx.lineTo(
+                    arrowEnd.x - 10 * Math.cos(angle + Math.PI / 6),
+                    arrowEnd.y - 10 * Math.sin(angle + Math.PI / 6)
+                );
+
+                ctx.strokeStyle = "#000";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        }
     } else if (gameState.drawnPath.length > 0) {
         // Drawing phase preview
         ctx.beginPath();
@@ -395,31 +702,56 @@ function draw() {
         ctx.stroke();
     }
 
-    // Start/End
-    if (gameState.startPoint)
-        drawMarker(gameState.startPoint, "START", "#10b981");
-    if (gameState.endPoint) drawMarker(gameState.endPoint, "FINISH", "#ef4444");
+    // Grid (Draw AFTER track so it's visible on top)
+    if (document.getElementById("show-grid-chk").checked) {
+        drawGrid();
+    }
 
     // Players
-    gameState.players.forEach((p) => drawPlayer(p));
+    gameState.players.forEach((p, idx) => {
+        const isActive =
+            gameState.mode === STATE.RACING &&
+            idx === gameState.currentPlayerIdx;
+        drawPlayer(p, isActive);
+    });
 
     // Valid Moves
     if (gameState.mode === STATE.RACING) {
         drawValidMoves(gameState.players[gameState.currentPlayerIdx]);
     }
+
+    ctx.restore();
 }
 
 function drawGrid() {
-    ctx.strokeStyle = "#f1f5f9";
+    // We need to draw grid lines that cover the visible area or the whole world?
+    // Drawing infinite grid is tricky with transform.
+    // Let's draw a large enough grid around the track or just the canvas area transformed.
+    // Simplest: Draw grid based on world coordinates covering the canvas view.
+
+    // Get visible world bounds
+    // But simpler: just draw a huge grid from -5000 to 5000?
+    // Or just draw grid on the canvas area but mapped to world?
+
+    const startX = -2000;
+    const endX = 4000;
+    const startY = -2000;
+    const endY = 4000;
+
+    // Offset grid by half size so intersections are in the center of squares
+    const offset = CONFIG.gridSize / 2;
+
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.1)"; // Very light black
     ctx.lineWidth = 1;
     ctx.beginPath();
-    for (let x = 0; x <= canvas.width; x += CONFIG.gridSize) {
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, canvas.height);
+
+    for (let x = startX; x <= endX; x += CONFIG.gridSize) {
+        ctx.moveTo(x + offset, startY);
+        ctx.lineTo(x + offset, endY);
     }
-    for (let y = 0; y <= canvas.height; y += CONFIG.gridSize) {
-        ctx.moveTo(0, y);
-        ctx.lineTo(canvas.width, y);
+    for (let y = startY; y <= endY; y += CONFIG.gridSize) {
+        ctx.moveTo(startX, y + offset);
+        ctx.lineTo(endX, y + offset);
     }
     ctx.stroke();
 }
@@ -436,7 +768,7 @@ function drawMarker(pos, text, color) {
     ctx.fillText(text, pos.x, pos.y - 10);
 }
 
-function drawPlayer(p) {
+function drawPlayer(p, isActive) {
     // History
     if (p.history.length > 1) {
         ctx.beginPath();
@@ -446,6 +778,23 @@ function drawPlayer(p) {
         ctx.lineWidth = 2;
         ctx.stroke();
     }
+
+    // Active Player Highlight
+    if (isActive) {
+        ctx.beginPath();
+        ctx.arc(p.pos.x, p.pos.y, 10, 0, Math.PI * 2);
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = 0.3;
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
+
+        ctx.beginPath();
+        ctx.arc(p.pos.x, p.pos.y, 10, 0, Math.PI * 2);
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }
+
     // Current
     ctx.fillStyle = p.color;
     ctx.beginPath();
@@ -470,13 +819,29 @@ function drawValidMoves(player) {
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Dots
-    ctx.fillStyle = player.color;
-    ctx.globalAlpha = 0.4;
+    // Dots (Full Cells)
     moves.forEach((m) => {
-        ctx.beginPath();
-        ctx.arc(m.x, m.y, 4, 0, Math.PI * 2);
-        ctx.fill();
+        // Draw full grid cell
+        // Grid point is center or corner?
+        // snapToGrid rounds to nearest grid size. So m.x, m.y is the center/intersection.
+        // Let's draw a square centered at m.x, m.y
+        const half = CONFIG.gridSize / 2;
+
+        // Fill
+        ctx.fillStyle = player.color;
+        ctx.globalAlpha = 0.2;
+        ctx.fillRect(m.x - half, m.y - half, CONFIG.gridSize, CONFIG.gridSize);
+
+        // Outline
+        ctx.globalAlpha = 0.8;
+        ctx.strokeStyle = player.color;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(
+            m.x - half,
+            m.y - half,
+            CONFIG.gridSize,
+            CONFIG.gridSize
+        );
     });
     ctx.globalAlpha = 1.0;
 }

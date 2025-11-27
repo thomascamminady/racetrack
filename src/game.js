@@ -329,8 +329,14 @@ class Game {
         // We could also check intermediate points for better collision
 
         if (!isTargetOnTrack) {
-            alert(`CRASH! ${player.name} went off track! Moving back 2 turns.`);
-            player.crash();
+            const penalty = player.crash();
+            alert(
+                `CRASH! ${
+                    player.name
+                } went off track! Moving back ${penalty} square${
+                    penalty > 1 ? "s" : ""
+                }.`
+            );
         } else {
             // Check Lap
             // To prevent cheating (crossing finish line immediately backwards or without loop),
@@ -395,7 +401,7 @@ class Game {
                 const activeStyle = isActive
                     ? `border-color: ${p.color}; background-color: ${p.color}20; color: ${p.color};`
                     : "";
-                const turn = p.history.length - 1;
+                const turn = p.moveCount;
                 return `
             <div class="player-chip ${
                 isActive ? "active" : ""

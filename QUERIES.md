@@ -83,3 +83,11 @@ When showing the trace a player took, also draw not just the dashed line but a s
 # Query 19
 
 Those top buttons are still not all the way to the right (width grid size print github)
+
+# Query 20
+
+Embed the #racetrack.png file into the readme
+
+# Query 21
+
+Actually, when hitting a wall the first time, move the player back 1 square, then hitting the wall again, 2 squares, 3 squares so on. do not reset the turn counter, it should be punishemnet

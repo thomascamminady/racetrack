@@ -6,6 +6,8 @@ export class Player {
         this.velocity = { x: 0, y: 0 }; // Grid units
         this.history = [{ ...startGridPos }];
         this.crashed = false;
+        this.crashCount = 0;
+        this.moveCount = 0;
     }
 
     move(targetGridPos) {
@@ -17,33 +19,40 @@ export class Player {
         this.velocity = newVel;
         this.gridPos = { ...targetGridPos };
         this.history.push({ ...targetGridPos });
+        this.moveCount++;
     }
 
     crash() {
-        // Move back 2 turns
-        if (this.history.length > 2) {
-            this.history.pop(); // Remove current (invalid)
-            this.history.pop(); // Remove previous
-            const newPos = this.history[this.history.length - 1];
-            this.gridPos = { ...newPos };
+        this.crashCount++;
+        this.moveCount++; // Crashing counts as a turn
 
-            // Recalculate velocity based on the move *before* the crash
+        const penalty = this.crashCount;
+
+        // Move back 'penalty' squares
+        // We need to remove 'penalty' items from history
+        // But ensure we don't go below 1 item (start pos)
+
+        for (let i = 0; i < penalty; i++) {
             if (this.history.length > 1) {
-                const prev = this.history[this.history.length - 2];
-                this.velocity = {
-                    x: this.gridPos.x - prev.x,
-                    y: this.gridPos.y - prev.y,
-                };
-            } else {
-                this.velocity = { x: 0, y: 0 };
+                this.history.pop();
             }
+        }
+
+        const newPos = this.history[this.history.length - 1];
+        this.gridPos = { ...newPos };
+
+        // Recalculate velocity based on the move *before* the crash
+        if (this.history.length > 1) {
+            const prev = this.history[this.history.length - 2];
+            this.velocity = {
+                x: this.gridPos.x - prev.x,
+                y: this.gridPos.y - prev.y,
+            };
         } else {
-            // Reset to start
-            const start = this.history[0];
-            this.history = [{ ...start }];
-            this.gridPos = { ...start };
             this.velocity = { x: 0, y: 0 };
         }
+
+        return penalty;
     }
 
     getValidMoves() {

@@ -1,6 +1,6 @@
 # Racetrack
 
-See https://en.wikipedia.org/wiki/Racetrack_(game)
+[Play the game](https://camminady.dev/racetrack/)
 
 # Query 1
 
